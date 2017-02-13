@@ -7,6 +7,22 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 
 WIDTH,HEIGHT = 800,600
+oldFaceLoc = [0,0]
+newFaceLoc = [0,0]
+faceLerp = 0
+faceFrameMax = 6
+faceFrame = faceFrameMax #If faceFrame == faceFrameMax it will update oldFaceLoc
+
+def lerpVec2(a,b,t) :
+    newx = (1-t)*a[0] + t*b[0]
+    newy = (1-t)*a[1] + t*b[1]
+    return [newx,newy]
+
+def lerpVec3(a,b,t) :
+    newx = (1-t)*a[0] + t*b[0]
+    newy = (1-t)*a[1] + t*b[1]
+    newz = (1-t)*a[2] + t*b[2]
+    return [newx,newy,newz]
 
 cascPath = "haarcascade_frontalface_default.xml.xml"
 faceCascade = cv2.CascadeClassifier(cascPath)
@@ -42,10 +58,32 @@ while True :
     # Draw a rectangle around the faces
     try :
         for (x,y,w,h) in faces :
+            #Normal way of drawing face
             sx = (x-WIDTH/2)/50
-            sy = (y-HEIGHT/2)/50
+            sy = (y-HEIGHT/2)/70
             glBegin(GL_QUADS)
-            glColor3f(1,1,1)
+            glColor3f(1,0,0)
+            glVertex3f(sx-1,sy-1,-1)
+            glVertex3f(sx-1,sy+1,-1)
+            glVertex3f(sx+1,sy+1,-1)
+            glVertex3f(sx+1,sy-1,-1)
+            glEnd()
+
+            #Lerped way of drawing face
+            sx = (x-WIDTH/2)/50
+            sy = (y-HEIGHT/2)/70
+            newFaceLoc = [sx,sy]
+            if faceFrame < faceFrameMax :
+                faceLerp += 1/faceFrameMax
+                faceFrame += 1
+            else :
+                oldFaceLoc = [sx,sy]
+                faceFrame = 0
+            sxy = lerpVec2(oldFaceLoc,newFaceLoc,faceLerp)
+            sx = sxy[0]
+            sy = sxy[1]
+            glBegin(GL_QUADS)
+            glColor3f(0,1,0)
             glVertex3f(sx-1,sy-1,-1)
             glVertex3f(sx-1,sy+1,-1)
             glVertex3f(sx+1,sy+1,-1)
