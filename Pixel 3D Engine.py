@@ -28,6 +28,7 @@ cascPath = "haarcascade_frontalface_default.xml.xml"
 faceCascade = cv2.CascadeClassifier(cascPath)
 
 video_capture = cv2.VideoCapture(0)
+print(video_capture.read())
 
 pygame.init()
 pygame.display.set_mode([WIDTH,HEIGHT],DOUBLEBUF|OPENGL)
@@ -58,9 +59,11 @@ while True :
     # Draw a rectangle around the faces
     try :
         for (x,y,w,h) in faces :
+            nx = x
+            ny = y
             #Normal way of drawing face
-            sx = (x-WIDTH/2)/50
-            sy = (y-HEIGHT/2)/70
+            sx = (nx-WIDTH/2)/50
+            sy = (ny-HEIGHT/2)/50
             glBegin(GL_QUADS)
             glColor3f(1,0,0)
             glVertex3f(sx-1,sy-1,-1)
@@ -70,8 +73,8 @@ while True :
             glEnd()
 
             #Lerped way of drawing face
-            sx = (x-WIDTH/2)/50
-            sy = (y-HEIGHT/2)/70
+            sx = (nx-WIDTH/2)/50
+            sy = (ny-HEIGHT/2)/50
             newFaceLoc = [sx,sy]
             if faceFrame < faceFrameMax :
                 faceLerp += 1/faceFrameMax
