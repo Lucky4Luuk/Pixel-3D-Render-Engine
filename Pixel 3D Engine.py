@@ -28,7 +28,11 @@ cascPath = "haarcascade_frontalface_default.xml.xml"
 faceCascade = cv2.CascadeClassifier(cascPath)
 
 video_capture = cv2.VideoCapture(0)
-print(video_capture.read())
+firstret, firstframe = video_capture.read()
+camWidth = int(firstframe.shape[0])
+camHeight = int(firstframe.shape[1])
+aspectW = WIDTH/camWidth
+aspectH = HEIGHT/camHeight
 
 pygame.init()
 pygame.display.set_mode([WIDTH,HEIGHT],DOUBLEBUF|OPENGL)
@@ -59,8 +63,8 @@ while True :
     # Draw a rectangle around the faces
     try :
         for (x,y,w,h) in faces :
-            nx = x
-            ny = y
+            nx = x*aspectW
+            ny = y*aspectH
             #Normal way of drawing face
             sx = (nx-WIDTH/2)/50
             sy = (ny-HEIGHT/2)/50
