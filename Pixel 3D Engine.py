@@ -5,6 +5,10 @@ import sys
 import numpy
 from OpenGL.GL import *
 from OpenGL.GLU import *
+import ctypes
+
+myDLLlib = ctypes.cdll.LoadLibrary("C++ DLLS/DLL Library Project.dll")
+print(myDLLlib.sum(5,3))
 
 WIDTH,HEIGHT = 800,600
 oldFaceLoc = [0,0]
@@ -33,12 +37,57 @@ camWidth = int(firstframe.shape[0])
 camHeight = int(firstframe.shape[1])
 aspectW = WIDTH/camWidth
 aspectH = HEIGHT/camHeight
+drawFace = 1
+camx = 0
+camy = 0
+camz = 1
+rotz = 0
 
 pygame.init()
 pygame.display.set_mode([WIDTH,HEIGHT],DOUBLEBUF|OPENGL)
-gluPerspective(45, (WIDTH/HEIGHT), 0.1, 50.0)
+gluPerspective(70, (WIDTH/HEIGHT), 1, 500.0)
 glTranslatef(0.0,0.0,-5)
 glRotatef(0,0,0,0)
+
+class Model() :
+    def __init__(self,filename) :
+        self.vertices = []
+        self.faces = []
+        self.load("models/"+str(filename))
+
+    def load(self,filename) :
+        self.file = open(filename)
+        for line in self.file :
+            if line.startswith("v ") :
+                vdata = line.split("v ")[1].split(" ")
+                x = float(vdata[0])
+                y = float(vdata[1])
+                z = float(vdata[2])
+                self.vertices.append((x,y,z))
+            elif line.startswith("f ") :
+                fdata = line.split("f ")[1].split(" ")
+                try :
+                    v1 = int(fdata[0].split("//")[0])-1
+                    v2 = int(fdata[1].split("//")[0])-1
+                    v3 = int(fdata[2].split("//")[0])-1
+                    self.faces.append([v1,v2,v3])
+                except Exception :
+                    v1 = int(fdata[0].split("/")[0])-1
+                    v2 = int(fdata[1].split("/")[0])-1
+                    v3 = int(fdata[2].split("/")[0])-1
+                    self.faces.append([v1,v2,v3])
+        self.file.close()
+
+    def draw(self) :
+        glBegin(GL_TRIANGLES)
+        for f in self.faces :
+            glColor3f(0.5,0.8,0.2)
+            glVertex3fv(self.vertices[f[0]])
+            glVertex3fv(self.vertices[f[1]])
+            glVertex3fv(self.vertices[f[2]])
+        glEnd()
+
+model = Model("simplescene.obj")
 
 while True :
     #Clear Window
@@ -60,42 +109,28 @@ while True :
         minSize=(30,30)
     )
     
-    # Draw a rectangle around the faces
+    #Draw stuff and move camera
     try :
         for (x,y,w,h) in faces :
             nx = x*aspectW
             ny = y*aspectH
-            #Normal way of drawing face
-            sx = (nx-WIDTH/2)/50
-            sy = (ny-HEIGHT/2)/50
-            glBegin(GL_QUADS)
-            glColor3f(1,0,0)
-            glVertex3f(sx-1,sy-1,-1)
-            glVertex3f(sx-1,sy+1,-1)
-            glVertex3f(sx+1,sy+1,-1)
-            glVertex3f(sx+1,sy-1,-1)
-            glEnd()
-
-            #Lerped way of drawing face
-            sx = (nx-WIDTH/2)/50
-            sy = (ny-HEIGHT/2)/50
-            newFaceLoc = [sx,sy]
-            if faceFrame < faceFrameMax :
-                faceLerp += 1/faceFrameMax
-                faceFrame += 1
-            else :
-                oldFaceLoc = [sx,sy]
-                faceFrame = 0
-            sxy = lerpVec2(oldFaceLoc,newFaceLoc,faceLerp)
-            sx = sxy[0]
-            sy = sxy[1]
-            glBegin(GL_QUADS)
-            glColor3f(0,1,0)
-            glVertex3f(sx-1,sy-1,-1)
-            glVertex3f(sx-1,sy+1,-1)
-            glVertex3f(sx+1,sy+1,-1)
-            glVertex3f(sx+1,sy-1,-1)
-            glEnd()
+            sx = (nx-WIDTH/2)/100
+            sy = (ny-HEIGHT/2)/100
+            if drawFace == 1 :
+                #Normal way of drawing facelocations
+                glBegin(GL_QUADS)
+                glColor3f(1,0,0)
+                glVertex3f(sx-0.1,sy-0.1,-0.1)
+                glVertex3f(sx-0.1,sy+0.1,-0.1)
+                glVertex3f(sx+0.1,sy+0.1,-0.1)
+                glVertex3f(sx+0.1,sy-0.1,-0.1)
+                glEnd()
+            glMatrixMode(GL_PROJECTION)
+            glLoadIdentity() #Reset matrix
+            glTranslatef(camx,camy,camz)
+            gluLookAt(camx,camy,camz,-sx/10 + camx, -sy/10 + camy,-1 + camz,0,1,0)
+            glMatrixMode(GL_MODELVIEW)
+        model.draw()
     except Exception as e :
         print(e)
 
@@ -103,6 +138,8 @@ while True :
     for event in pygame.event.get() :
         if event.type == pygame.QUIT :
             pygame.quit()
+            video_capture.release()
+            cv2.destroyAllWindows()
             exit()
     
     #Update Window
